@@ -45,6 +45,9 @@ import java.util.logging.Logger;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultHighlighter;
+import javax.swing.text.Highlighter;
 import javax.xml.bind.JAXBException;
 
 import org.verapdf.apps.Applications;
@@ -214,10 +217,6 @@ class CheckerPanel extends JPanel {
 
 	private void initGui() throws IOException {
 		setPreferredSize(new Dimension(GUIConstants.PREFERRED_SIZE_WIDTH, GUIConstants.PREFERRED_SIZE_HEIGHT));
-		//TODO HERE
-		try {
-			UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
-		} catch (Exception evt) {}
 		GridBagLayout gbl = new GridBagLayout();
 		this.setLayout(gbl);
 		GridBagConstraints gbc = new GridBagConstraints();
@@ -855,6 +854,7 @@ class CheckerPanel extends JPanel {
 			return this;
 		}
 	}
+
 	private class PanelDropTarget implements DropTargetListener {
 		final Logger logger = Logger.getLogger(PanelDropTarget.class.getCanonicalName());
 
@@ -877,8 +877,6 @@ class CheckerPanel extends JPanel {
 
 		@Override
 		public void dragEnter(DropTargetDragEvent dtde) {
-			logger.info("DropTarget dragEnter, drop action = "
-					+ showActions(dtde.getDropAction()));
 			// Get the type of Object being transferred and determine
 			// whether it is appropriate.
 			checkTransferType(dtde);
@@ -889,32 +887,23 @@ class CheckerPanel extends JPanel {
 
 		@Override
 		public void dragOver(DropTargetDragEvent dtde) {
-			logger.info("DropTarget dragOver, drop action = "
-					+ showActions(dtde.getDropAction()));
-
 			// Accept or reject the drag.
 			acceptOrRejectDrag(dtde);
 		}
 
 		@Override
 		public void dropActionChanged(DropTargetDragEvent dtde) {
-			logger.info("DropTarget dropActionChanged, drop action = "
-					+ showActions(dtde.getDropAction()));
-
 			// Accept or reject the drag.
 			acceptOrRejectDrag(dtde);
 		}
 
 		@Override
 		public void dragExit(DropTargetEvent dte) {
-			logger.info("DropTarget dragExit");
+
 		}
 
 		@Override
 		public void drop(DropTargetDropEvent dtde) {
-			logger.info("DropTarget drop, drop action = "
-					+ showActions(dtde.getDropAction()));
-
 			// Check the drop action.
 			if ((dtde.getDropAction() & DnDConstants.ACTION_COPY_OR_MOVE) != 0) {
 				// Accept the drop and get the transfer data
@@ -924,13 +913,11 @@ class CheckerPanel extends JPanel {
 				try {
 					boolean result = dropComponent(transferable);
 					dtde.dropComplete(result);
-					logger.info("Drop completed, success: " + result);
 				} catch (Exception e) {
 					logger.severe("Exception while handling drop " + e);
 					dtde.dropComplete(false);
 				}
 			} else {
-				logger.warning("Drop target rejected drop");
 				dtde.rejectDrop();
 			}
 		}
@@ -971,54 +958,17 @@ class CheckerPanel extends JPanel {
 		}
 
 		private boolean dropComponent(Transferable transferable) throws IOException, UnsupportedFlavorException {
-			Object o = transferable.getTransferData(targetFlavor);
-			boolean dropSuccess = false;
-			String JTextData = "";
-			pdfsToProcess = new ArrayList<>();
-			//TODO do we need to filter files before processing???
-			//ApplicationUtils.filterPdfFiles((List<File>)o, true);
-			for (File file : (List<File>) o) {
-				if (getFileExtension(file).equals("pdf")) {
-					JTextData += file.getName();
-					pdfsToProcess.add(file);
-					dropSuccess = true;
-				}
-			}
-			if (dropSuccess) {
-				logger.info("Dragged component is " + o.getClass().getName());
-				panel.chosenPDF.setText(JTextData);
-				panel.chosenPDF.validate();
-				panel.execute.setEnabled(true);
+			Object dataObject = transferable.getTransferData(targetFlavor);
+			List<File> selectedFiles = (List<File>)dataObject;
+			panel.pdfsToProcess = ApplicationUtils.filterPdfFiles(selectedFiles, true);
+			panel.chosenPDF.setText(getSelectedPathsMessage(selectedFiles));
+			if (pdfsToProcess.size() > 0) {
+				panel.execute.setEnabled(isExecute());
 				return true;
 			} else {
 				return false;
 			}
 
-		}
-
-		private String showActions(int action) {
-			String actions = "";
-			if ((action & (DnDConstants.ACTION_LINK | DnDConstants.ACTION_COPY_OR_MOVE)) == 0) {
-				return "None";
-			}
-
-			if ((action & DnDConstants.ACTION_COPY) != 0) {
-				actions += "Copy ";
-			}
-
-			if ((action & DnDConstants.ACTION_MOVE) != 0) {
-				actions += "Move ";
-			}
-
-			if ((action & DnDConstants.ACTION_LINK) != 0) {
-				actions += "Link";
-			}
-			return actions;
-		}
-
-		private String getFileExtension(File file) {
-			int i = file.getName().lastIndexOf('.');
-			return file.getName().substring(i + 1);
 		}
 	}
 }
