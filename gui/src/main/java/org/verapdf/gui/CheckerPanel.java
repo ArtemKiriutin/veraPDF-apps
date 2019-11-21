@@ -894,9 +894,12 @@ class CheckerPanel extends JPanel {
 
                 try {
                     boolean result = dropComponent(transferable);
+                    if(!result){
+                    	dtde.rejectDrop();
+					}
                     dtde.dropComplete(result);
                 } catch (Exception e) {
-                    logger.severe("Exception while handling drop " + e);
+                    logger.warning("Exception while handling drop " + e);
                     dtde.dropComplete(false);
                 }
             } else {
@@ -943,8 +946,8 @@ class CheckerPanel extends JPanel {
             Object dataObject = transferable.getTransferData(targetFlavor);
             List<File> selectedFiles = (List<File>) dataObject;
             panel.pdfsToProcess = ApplicationUtils.filterPdfFiles(selectedFiles, true);
-            panel.chosenPDF.setText(getSelectedPathsMessage(selectedFiles));
             if (pdfsToProcess.size() > 0) {
+				panel.chosenPDF.setText(getSelectedPathsMessage(selectedFiles));
                 panel.execute.setEnabled(isExecute());
                 return true;
             } else {
