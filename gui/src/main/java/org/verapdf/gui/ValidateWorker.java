@@ -51,191 +51,191 @@ import java.util.logging.Logger;
  */
 class ValidateWorker extends SwingWorker<ResultModel, Integer> {
 
-	private static final Logger logger = Logger.getLogger(ValidateWorker.class.getCanonicalName());
+    private static final Logger logger = Logger.getLogger(ValidateWorker.class.getCanonicalName());
 
-	private static final String ERROR_IN_OPEN_STREAMS = "Can't open stream from PDF file or can't open stream to temporary XML report file"; //$NON-NLS-1$
-	private static final String ERROR_IN_PROCESSING = "Error during the processing"; //$NON-NLS-1$
-	private static final String ERROR_IN_CREATING_TEMP_FILE = "Can't create temporary file for XML report"; //$NON-NLS-1$
-	private static final String ERROR_IN_OBTAINING_POLICY_FEATURES = "Can't obtain enabled features from policy files"; //$NON-NLS-1$
+    private static final String ERROR_IN_OPEN_STREAMS = "Can't open stream from PDF file or can't open stream to temporary XML report file"; //$NON-NLS-1$
+    private static final String ERROR_IN_PROCESSING = "Error during the processing"; //$NON-NLS-1$
+    private static final String ERROR_IN_CREATING_TEMP_FILE = "Can't create temporary file for XML report"; //$NON-NLS-1$
+    private static final String ERROR_IN_OBTAINING_POLICY_FEATURES = "Can't obtain enabled features from policy files"; //$NON-NLS-1$
 
-	private List<File> pdfs;
-	private ValidationProfile customProfile;
-	private File policy;
-	private CheckerPanel parent;
-	private ConfigManager configManager;
-	private File xmlReport = null;
-	private File htmlReport = null;
-	private BatchSummary batchSummary = null;
+    private List<File> pdfs;
+    private ValidationProfile customProfile;
+    private File policy;
+    private CheckerPanel parent;
+    private ConfigManager configManager;
+    private File xmlReport = null;
+    private File htmlReport = null;
+    private BatchSummary batchSummary = null;
 
-	ValidateWorker(CheckerPanel parent, List<File> pdfs, ConfigManager configManager, ValidationProfile customProfile,
-			File policy) {
-		if (pdfs == null) {
-			throw new IllegalArgumentException("List of pdf files can not be null"); //$NON-NLS-1$
-		}
-		this.parent = parent;
-		this.pdfs = pdfs;
-		this.configManager = configManager;
-		this.customProfile = customProfile;
-		this.policy = policy;
-	}
+    ValidateWorker(CheckerPanel parent, List<File> pdfs, ConfigManager configManager, ValidationProfile customProfile,
+                   File policy) {
+        if (pdfs == null) {
+            throw new IllegalArgumentException("List of pdf files can not be null"); //$NON-NLS-1$
+        }
+        this.parent = parent;
+        this.pdfs = pdfs;
+        this.configManager = configManager;
+        this.customProfile = customProfile;
+        this.policy = policy;
+    }
 
-	@Override
-	protected ResultModel doInBackground() {
-		ResultModel resultModel = null;
+    @Override
+    protected ResultModel doInBackground() {
+        ResultModel resultModel = null;
 
-		try {
-			this.xmlReport = File.createTempFile("veraPDF-tempXMLReport", ".xml"); //$NON-NLS-1$//$NON-NLS-2$
-			this.xmlReport.deleteOnExit();
-			this.htmlReport = null;
-		} catch (IOException e) {
-			logger.log(Level.SEVERE, ERROR_IN_CREATING_TEMP_FILE, e);
-			this.parent.handleValidationError(ERROR_IN_CREATING_TEMP_FILE + ": ", e); //$NON-NLS-1$
-		}
-		try (OutputStream mrrReport = new FileOutputStream(this.xmlReport)) {
-			VeraAppConfig veraAppConfig = this.parent.appConfigFromState();
-			ProcessType processType = veraAppConfig.getProcessType();
-			boolean isPolicy = (processType == ProcessType.POLICY || processType == ProcessType.POLICY_FIX)
-					&& this.policy != null;
-			EnumSet<TaskType> tasks = processType.getTasks();
-			ValidatorConfig validatorConfig = this.configManager.getValidatorConfig();
-			FeatureExtractorConfig featuresConfig = this.configManager.getFeaturesConfig();
-			if (isPolicy) {
-				try (InputStream policyStream = new FileInputStream(this.policy)) {
-					featuresConfig = ApplicationUtils.mergeEnabledFeaturesFromPolicy(featuresConfig, policyStream);
-				} catch (ParserConfigurationException | SAXException | XPathExpressionException e) {
-					logger.log(Level.SEVERE, ERROR_IN_OBTAINING_POLICY_FEATURES, e);
-					this.parent.handleValidationError(ERROR_IN_OBTAINING_POLICY_FEATURES + ": ", e);
-				}
-			}
-			ProcessorConfig resultConfig = this.customProfile == null
-					? ProcessorFactory.fromValues(validatorConfig, featuresConfig,
-							this.configManager.getPluginsCollectionConfig(), this.configManager.getFixerConfig(), tasks,
-							veraAppConfig.getFixesFolder())
-					: ProcessorFactory.fromValues(validatorConfig, featuresConfig,
-							this.configManager.getPluginsCollectionConfig(), this.configManager.getFixerConfig(), tasks,
-							this.customProfile, veraAppConfig.getFixesFolder());
-			try (BatchProcessor processor = ProcessorFactory.fileBatchProcessor(resultConfig);) {
-				VeraAppConfig applicationConfig = this.configManager.getApplicationConfig();
-				this.batchSummary = processor.process(this.pdfs,
-						ProcessorFactory.getHandler(FormatOption.MRR, applicationConfig.isVerbose(), mrrReport,
-								applicationConfig.getMaxFailsDisplayed(), validatorConfig.isRecordPasses()));
+        try {
+            this.xmlReport = File.createTempFile("veraPDF-tempXMLReport", ".xml"); //$NON-NLS-1$//$NON-NLS-2$
+            this.xmlReport.deleteOnExit();
+            this.htmlReport = null;
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, ERROR_IN_CREATING_TEMP_FILE, e);
+            this.parent.handleValidationError(ERROR_IN_CREATING_TEMP_FILE + ": ", e); //$NON-NLS-1$
+        }
+        try (OutputStream mrrReport = new FileOutputStream(this.xmlReport)) {
+            VeraAppConfig veraAppConfig = this.parent.appConfigFromState();
+            ProcessType processType = veraAppConfig.getProcessType();
+            boolean isPolicy = (processType == ProcessType.POLICY || processType == ProcessType.POLICY_FIX)
+                    && this.policy != null;
+            EnumSet<TaskType> tasks = processType.getTasks();
+            ValidatorConfig validatorConfig = this.configManager.getValidatorConfig();
+            FeatureExtractorConfig featuresConfig = this.configManager.getFeaturesConfig();
+            if (isPolicy) {
+                try (InputStream policyStream = new FileInputStream(this.policy)) {
+                    featuresConfig = ApplicationUtils.mergeEnabledFeaturesFromPolicy(featuresConfig, policyStream);
+                } catch (ParserConfigurationException | SAXException | XPathExpressionException e) {
+                    logger.log(Level.SEVERE, ERROR_IN_OBTAINING_POLICY_FEATURES, e);
+                    this.parent.handleValidationError(ERROR_IN_OBTAINING_POLICY_FEATURES + ": ", e);
+                }
+            }
+            ProcessorConfig resultConfig = this.customProfile == null
+                    ? ProcessorFactory.fromValues(validatorConfig, featuresConfig,
+                    this.configManager.getPluginsCollectionConfig(), this.configManager.getFixerConfig(), tasks,
+                    veraAppConfig.getFixesFolder())
+                    : ProcessorFactory.fromValues(validatorConfig, featuresConfig,
+                    this.configManager.getPluginsCollectionConfig(), this.configManager.getFixerConfig(), tasks,
+                    this.customProfile, veraAppConfig.getFixesFolder());
+            try (BatchProcessor processor = ProcessorFactory.fileBatchProcessor(resultConfig);) {
+                VeraAppConfig applicationConfig = this.configManager.getApplicationConfig();
+                this.batchSummary = processor.process(this.pdfs,
+                        ProcessorFactory.getHandler(FormatOption.MRR, applicationConfig.isVerbose(), mrrReport,
+                                applicationConfig.getMaxFailsDisplayed(), validatorConfig.isRecordPasses()));
 
-				if (isPolicy) {
-					applyPolicy();
-					resultModel = new ResultModel(batchSummary, policyFailedJobsCount(xmlReport));
-				} else {
-					resultModel = new ResultModel(batchSummary);
-				}
-			}
-		} catch (IOException e) {
-			logger.log(Level.SEVERE, ERROR_IN_OPEN_STREAMS, e);
-			this.parent.handleValidationError(ERROR_IN_OPEN_STREAMS + ": ", e); //$NON-NLS-1$
-		} catch (VeraPDFException e) {
-			logger.log(Level.SEVERE, ERROR_IN_PROCESSING, e);
-			this.parent.handleValidationError(ERROR_IN_PROCESSING + ": ", e); //$NON-NLS-1$
-		} catch (ParserConfigurationException e){
-			logger.log(Level.SEVERE, ERROR_IN_PROCESSING, e);
-			this.parent.handleValidationError(ERROR_IN_PROCESSING + ": ", e);
-		} catch (SAXException e){
-			logger.log(Level.SEVERE, ERROR_IN_PROCESSING, e);
-			this.parent.handleValidationError(ERROR_IN_PROCESSING + ": ", e);
-		}
-		if (this.batchSummary != null) {
-			writeHtmlReport();
-		}
+                if (isPolicy) {
+                    applyPolicy();
+                    resultModel = new ResultModel(batchSummary, policyFailedJobsCount(xmlReport));
+                } else {
+                    resultModel = new ResultModel(batchSummary);
+                }
+            }
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, ERROR_IN_OPEN_STREAMS, e);
+            this.parent.handleValidationError(ERROR_IN_OPEN_STREAMS + ": ", e); //$NON-NLS-1$
+        } catch (VeraPDFException e) {
+            logger.log(Level.SEVERE, ERROR_IN_PROCESSING, e);
+            this.parent.handleValidationError(ERROR_IN_PROCESSING + ": ", e); //$NON-NLS-1$
+        } catch (ParserConfigurationException e) {
+            logger.log(Level.SEVERE, ERROR_IN_PROCESSING, e);
+            this.parent.handleValidationError(ERROR_IN_PROCESSING + ": ", e);
+        } catch (SAXException e) {
+            logger.log(Level.SEVERE, ERROR_IN_PROCESSING, e);
+            this.parent.handleValidationError(ERROR_IN_PROCESSING + ": ", e);
+        }
+        if (this.batchSummary != null) {
+            writeHtmlReport();
+        }
 
-		return resultModel;
-	}
+        return resultModel;
+    }
 
-	private void applyPolicy() throws IOException, VeraPDFException {
-		File tempMrrFile = this.xmlReport;
-		this.xmlReport = File.createTempFile("veraPDF-tempXMLReport", ".xml"); //$NON-NLS-1$ //$NON-NLS-2$
-		this.xmlReport.deleteOnExit();
-		File tempPolicyResult = File.createTempFile("policyResult", "veraPDF"); //$NON-NLS-1$ //$NON-NLS-2$
-		try (InputStream mrrIs = new FileInputStream(tempMrrFile);
-				OutputStream policyResultOs = new FileOutputStream(tempPolicyResult);
-				OutputStream mrrReport = new FileOutputStream(this.xmlReport)) {
-			PolicyChecker.applyPolicy(this.policy, mrrIs, policyResultOs);
-			PolicyChecker.insertPolicyReport(tempPolicyResult, tempMrrFile, mrrReport);
-		}
-		if (!tempPolicyResult.delete()) {
-			tempPolicyResult.deleteOnExit();
-		}
-	}
+    private void applyPolicy() throws IOException, VeraPDFException {
+        File tempMrrFile = this.xmlReport;
+        this.xmlReport = File.createTempFile("veraPDF-tempXMLReport", ".xml"); //$NON-NLS-1$ //$NON-NLS-2$
+        this.xmlReport.deleteOnExit();
+        File tempPolicyResult = File.createTempFile("policyResult", "veraPDF"); //$NON-NLS-1$ //$NON-NLS-2$
+        try (InputStream mrrIs = new FileInputStream(tempMrrFile);
+             OutputStream policyResultOs = new FileOutputStream(tempPolicyResult);
+             OutputStream mrrReport = new FileOutputStream(this.xmlReport)) {
+            PolicyChecker.applyPolicy(this.policy, mrrIs, policyResultOs);
+            PolicyChecker.insertPolicyReport(tempPolicyResult, tempMrrFile, mrrReport);
+        }
+        if (!tempPolicyResult.delete()) {
+            tempPolicyResult.deleteOnExit();
+        }
+    }
 
-	@Override
-	protected void done() {
-		this.parent.validationEnded(this.xmlReport, this.htmlReport);
-	}
+    @Override
+    protected void done() {
+        this.parent.validationEnded(this.xmlReport, this.htmlReport);
+    }
 
-	private void writeHtmlReport() {
-		final String extension = "html";
-		final String ext = "." + extension;
-		try {
-			this.htmlReport = File.createTempFile("veraPDF-tempHTMLReport", ext); //$NON-NLS-1$
-			this.htmlReport.deleteOnExit();
-			try (InputStream xmlStream = new FileInputStream(this.xmlReport);
-					OutputStream htmlStream = new FileOutputStream(this.htmlReport)) {
-				HTMLReport.writeHTMLReport(xmlStream, htmlStream, this.batchSummary.isMultiJob(),
-						this.configManager.getApplicationConfig().getWikiPath(), true);
+    private void writeHtmlReport() {
+        final String extension = "html";
+        final String ext = "." + extension;
+        try {
+            this.htmlReport = File.createTempFile("veraPDF-tempHTMLReport", ext); //$NON-NLS-1$
+            this.htmlReport.deleteOnExit();
+            try (InputStream xmlStream = new FileInputStream(this.xmlReport);
+                 OutputStream htmlStream = new FileOutputStream(this.htmlReport)) {
+                HTMLReport.writeHTMLReport(xmlStream, htmlStream, this.batchSummary.isMultiJob(),
+                        this.configManager.getApplicationConfig().getWikiPath(), true);
 
-			} catch (IOException | TransformerException excep) {
-				final String message = String.format(GUIConstants.IOEXCEP_SAVING_REPORT, extension);
-				JOptionPane.showMessageDialog(this.parent,
-						String.format(GUIConstants.IOEXCEP_SAVING_REPORT, extension), GUIConstants.ERROR,
-						JOptionPane.ERROR_MESSAGE);
-				logger.log(Level.SEVERE, message, excep);
-				this.htmlReport = null;
-			}
-		} catch (IOException excep) {
-			final String message = String.format(GUIConstants.IOEXCEP_SAVING_REPORT, extension);
-			JOptionPane.showMessageDialog(this.parent, message, GUIConstants.ERROR, JOptionPane.ERROR_MESSAGE);
-			logger.log(Level.SEVERE, message, excep);
-			this.htmlReport = null;
-		}
-	}
+            } catch (IOException | TransformerException excep) {
+                final String message = String.format(GUIConstants.IOEXCEP_SAVING_REPORT, extension);
+                JOptionPane.showMessageDialog(this.parent,
+                        String.format(GUIConstants.IOEXCEP_SAVING_REPORT, extension), GUIConstants.ERROR,
+                        JOptionPane.ERROR_MESSAGE);
+                logger.log(Level.SEVERE, message, excep);
+                this.htmlReport = null;
+            }
+        } catch (IOException excep) {
+            final String message = String.format(GUIConstants.IOEXCEP_SAVING_REPORT, extension);
+            JOptionPane.showMessageDialog(this.parent, message, GUIConstants.ERROR, JOptionPane.ERROR_MESSAGE);
+            logger.log(Level.SEVERE, message, excep);
+            this.htmlReport = null;
+        }
+    }
 
-	private int policyFailedJobsCount(File xmlReport) throws ParserConfigurationException, SAXException, IOException{
-		SAXParserFactory factory = SAXParserFactory.newInstance();
-		SAXParser parser = factory.newSAXParser();
-		PolicyHandler policyHandler = new PolicyHandler();
-		parser.parse(xmlReport,policyHandler);
-		return policyHandler.getPolicyNonCompliantJobCount();
-	}
+    private int policyFailedJobsCount(File xmlReport) throws ParserConfigurationException, SAXException, IOException {
+        SAXParserFactory factory = SAXParserFactory.newInstance();
+        SAXParser parser = factory.newSAXParser();
+        PolicyHandler policyHandler = new PolicyHandler();
+        parser.parse(xmlReport, policyHandler);
+        return policyHandler.getPolicyNonCompliantJobCount();
+    }
 
-	public class PolicyHandler extends DefaultHandler {
+    public class PolicyHandler extends DefaultHandler {
 
-		private int policyNonCompliantJobCount = 0;
+        private int policyNonCompliantJobCount = 0;
 
-		@Override
-		public void startDocument() throws SAXException {
-			super.startDocument();
-		}
+        @Override
+        public void startDocument() throws SAXException {
+            super.startDocument();
+        }
 
-		@Override
-		public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-			if ((qName.equals("policyReport") && (Integer.parseInt(attributes.getValue("failedChecks")) > 0))) {
-				this.policyNonCompliantJobCount++;
-			}
-		}
+        @Override
+        public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+            if ((qName.equals("policyReport") && (Integer.parseInt(attributes.getValue("failedChecks")) > 0))) {
+                this.policyNonCompliantJobCount++;
+            }
+        }
 
-		@Override
-		public void characters(char[] ch, int start, int length) throws SAXException {
-			super.characters(ch, start, length);
-		}
+        @Override
+        public void characters(char[] ch, int start, int length) throws SAXException {
+            super.characters(ch, start, length);
+        }
 
-		@Override
-		public void endElement(String uri, String localName, String qName) throws SAXException {
-			super.endElement(uri, localName, qName);
-		}
+        @Override
+        public void endElement(String uri, String localName, String qName) throws SAXException {
+            super.endElement(uri, localName, qName);
+        }
 
-		@Override
-		public void endDocument() throws SAXException {
-			super.endDocument();
-		}
+        @Override
+        public void endDocument() throws SAXException {
+            super.endDocument();
+        }
 
-		public int getPolicyNonCompliantJobCount() {
-			return this.policyNonCompliantJobCount;
-		}
-	}
+        public int getPolicyNonCompliantJobCount() {
+            return this.policyNonCompliantJobCount;
+        }
+    }
 }
