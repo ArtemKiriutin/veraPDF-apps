@@ -20,6 +20,7 @@ import org.verapdf.apps.ConfigManager;
 import org.verapdf.apps.ProcessType;
 import org.verapdf.apps.VeraAppConfig;
 import org.verapdf.apps.utils.ApplicationUtils;
+import org.verapdf.core.utils.FileUtils;
 import org.verapdf.gui.utils.DialogUtils;
 import org.verapdf.gui.utils.GUIConstants;
 import org.verapdf.gui.utils.ResultModel;
@@ -28,6 +29,7 @@ import org.verapdf.pdfa.validation.profiles.Profiles;
 import org.verapdf.pdfa.validation.profiles.ValidationProfile;
 import org.verapdf.pdfa.validation.validators.ValidatorConfig;
 import org.verapdf.pdfa.validation.validators.ValidatorFactory;
+import org.verapdf.policy.PolicyChecker;
 import org.verapdf.processor.TaskType;
 
 import javax.swing.*;
@@ -214,7 +216,7 @@ class CheckerPanel extends JPanel {
         this.add(this.chosenPDF);
 
         // DropTarget feature associated with JTextField chosenPDF
-        PanelDropTarget target = new PanelDropTarget(this);
+        PanelDropTarget targetPdf = new PanelDropTarget(this.chosenPDF, "PDF");
 
         JButton choosePDF = new JButton(GUIConstants.CHOOSE_PDF_BUTTON_TEXT);
         setGridBagConstraintsParameters(gbc, GUIConstants.CHOOSE_PDF_BUTTON_CONSTRAINT_GRID_X,
@@ -507,6 +509,9 @@ class CheckerPanel extends JPanel {
                 CheckerPanel.this.fixMetadata.setEnabled(enableFixMetadata);
                 CheckerPanel.this.chosenPolicy.setEnabled(enablePolicy);
                 choosePolicy.setEnabled(enablePolicy);
+                if (enablePolicy) {
+                    PanelDropTarget targetPolicy = new PanelDropTarget(CheckerPanel.this.chosenPolicy, "Policy");
+                }
                 CheckerPanel.this.execute.setEnabled(isExecute());
             }
         });
@@ -838,10 +843,10 @@ class CheckerPanel extends JPanel {
     }
 
     private class PanelDropTarget implements DropTargetListener {
-        final Logger logger = Logger.getLogger(PanelDropTarget.class.getCanonicalName());
+        private final Logger logger = Logger.getLogger(PanelDropTarget.class.getCanonicalName());
 
-        private CheckerPanel panel;
         private DropTarget dropTarget;
+        private String fileType;
 
         // Indicates whether data is acceptable
         private boolean acceptableType;
@@ -849,11 +854,12 @@ class CheckerPanel extends JPanel {
         // Flavor to use for transfer
         private DataFlavor targetFlavor;
 
-        public PanelDropTarget(CheckerPanel panel) {
-            this.panel = panel;
+        public PanelDropTarget(Component component, String fileType) {
+            this.fileType = fileType;
+
             // Create the DropTarget and register
             // it with the JPanel
-            dropTarget = new DropTarget(this.panel.chosenPDF, DnDConstants.ACTION_COPY_OR_MOVE,
+            dropTarget = new DropTarget(component, DnDConstants.ACTION_COPY_OR_MOVE,
                     this, true, null);
         }
 
@@ -893,9 +899,9 @@ class CheckerPanel extends JPanel {
                 Transferable transferable = dtde.getTransferable();
                 try {
                     boolean result = dropComponent(transferable);
-                    if(!result){
-                    	dtde.rejectDrop();
-					}
+                    if (!result) {
+                        dtde.rejectDrop();
+                    }
                     dtde.dropComplete(result);
                 } catch (Exception e) {
                     logger.warning("Exception while handling drop " + e);
@@ -939,15 +945,29 @@ class CheckerPanel extends JPanel {
         private boolean dropComponent(Transferable transferable) throws IOException, UnsupportedFlavorException {
             Object dataObject = transferable.getTransferData(targetFlavor);
             List<File> selectedFiles = (List<File>) dataObject;
-            panel.pdfsToProcess = ApplicationUtils.filterPdfFiles(selectedFiles, true);
-            if (pdfsToProcess.size() > 0) {
-				panel.chosenPDF.setText(getSelectedPathsMessage(selectedFiles));
-                panel.execute.setEnabled(isExecute());
+
+            if (fileType.equals("PDF")) {
+                pdfsToProcess = ApplicationUtils.filterPdfFiles(selectedFiles, true);
+                if(pdfsToProcess.size() > 0) {
+                    chosenPDF.setText(getSelectedPathsMessage(selectedFiles));
+                    execute.setEnabled(isExecute());
+                    return true;
+                } else{
+                    return false;
+                }
+            } else if (fileType.equals("Policy") && selectedFiles.size() == 1 && isPolicyFile(selectedFiles.get(0))) {
+                policy = selectedFiles.get(0);
+                chosenPolicy.setText(policy.getAbsolutePath());
+                execute.setEnabled(isExecute());
                 return true;
             } else {
                 return false;
             }
+        }
 
+        private boolean isPolicyFile(File sourceFile) {
+            String ext = FileUtils.extFromFileName(sourceFile.getName());
+            return PolicyChecker.isAllowedExtension(ext);
         }
     }
 }
