@@ -956,9 +956,7 @@ class CheckerPanel extends JPanel {
                     return false;
                 }
             } else if (fileType.equals("Policy") && selectedFiles.size() == 1 && isPolicyFile(selectedFiles.get(0))) {
-                policy = selectedFiles.get(0);
-                chosenPolicy.setText(policy.getAbsolutePath());
-                execute.setEnabled(isExecute());
+                setPolicyFile(selectedFiles.get(0));
                 return true;
             } else {
                 return false;
