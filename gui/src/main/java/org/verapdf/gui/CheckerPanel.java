@@ -61,7 +61,7 @@ class CheckerPanel extends JPanel {
      */
     private static final long serialVersionUID = 1290058869994329766L;
 
-    static final Logger logger = Logger.getLogger(CheckerPanel.class.getCanonicalName());
+    private static final Logger logger = Logger.getLogger(CheckerPanel.class.getCanonicalName());
 
     private static final Map<String, PDFAFlavour> FLAVOURS_MAP = new HashMap<>();
     private static final String emptyString = ""; //$NON-NLS-1$
@@ -571,23 +571,23 @@ class CheckerPanel extends JPanel {
     private static String getBatchResultMessage(ResultModel result) {
         String divisor = ", "; //$NON-NLS-1$
         StringBuilder sb = new StringBuilder(
-                String.format("Items processed: %d", Integer.valueOf(result.getTotalJobs()))); //$NON-NLS-1$
-        String end = String.format("%s Parsing Error: %d", divisor, Integer.valueOf(result.getFailedParsingJobCount())); //$NON-NLS-1$
+                String.format("Items processed: %d", result.getTotalJobs())); //$NON-NLS-1$
+        String end = String.format("%s Parsing Error: %d", divisor, result.getFailedParsingJobCount()); //$NON-NLS-1$
         if (result.getValidationTotalJobCount() > 0) {
             end = String.format("%sValid: %d%sInvalid: %d%sError: %d", divisor, //$NON-NLS-1$
-                    Integer.valueOf(result.getCompliantPdfaCount()), divisor,
-                    Integer.valueOf(result.getNonCompliantPdfaCount()), divisor,
-                    Integer.valueOf(result.getValidationFailedJobCount()));
+                    result.getCompliantPdfaCount(), divisor,
+                    result.getNonCompliantPdfaCount(), divisor,
+                    result.getValidationFailedJobCount());
             sb.append(end);
         }
         if (result.getFeatureSuccessfulJobCount() > 0) {
             String old_end = end;
             end = String.format("%sFeatures generated: %d%s", divisor, //$NON-NLS-1$
-                    Integer.valueOf(result.getFeatureSuccessfulJobCount()), old_end);
+                    result.getFeatureSuccessfulJobCount(), old_end);
             sb.append(end);
         }
         if (result.getPolicyNonCompliantJobCount() > 0) {
-            end = String.format("%s%dInvalid: ", divisor, Integer.valueOf(result.getPolicyNonCompliantJobCount()));
+            end = String.format("%s%dInvalid: ", divisor, result.getPolicyNonCompliantJobCount());
             sb.append(end);
         }
         return sb.toString();
@@ -782,7 +782,7 @@ class CheckerPanel extends JPanel {
     }
 
     private static String getFlavourReadableText(PDFAFlavour flavour) {
-        return String.format("PDF/A-%d%S", Integer.valueOf(flavour.getPart().getPartNumber()), //$NON-NLS-1$
+        return String.format("PDF/A-%d%S", flavour.getPart().getPartNumber(), //$NON-NLS-1$
                 flavour.getLevel().getCode());
     }
 
@@ -891,7 +891,6 @@ class CheckerPanel extends JPanel {
                 // Accept the drop and get the transfer data
                 dtde.acceptDrop(dtde.getDropAction());
                 Transferable transferable = dtde.getTransferable();
-
                 try {
                     boolean result = dropComponent(transferable);
                     if(!result){
@@ -921,11 +920,9 @@ class CheckerPanel extends JPanel {
             }
         }
 
-        private boolean acceptOrRejectDrag(DropTargetDragEvent dropTargetDragEvent) {
+        private void acceptOrRejectDrag(DropTargetDragEvent dropTargetDragEvent) {
             int dropAction = dropTargetDragEvent.getDropAction();
             int sourceActions = dropTargetDragEvent.getSourceActions();
-            boolean acceptedDrag = false;
-
             // Reject if the object being transferred
             // or the operations available are not acceptable.
             if (!acceptableType || (sourceActions & DnDConstants.ACTION_COPY_OR_MOVE) == 0) {
@@ -933,13 +930,10 @@ class CheckerPanel extends JPanel {
             } else if ((dropAction & DnDConstants.ACTION_COPY_OR_MOVE) == 0) {
                 // Not offering copy or move - suggest a copy
                 dropTargetDragEvent.acceptDrag(DnDConstants.ACTION_COPY);
-                acceptedDrag = true;
             } else {
                 // Offering an acceptable operation: accept
                 dropTargetDragEvent.acceptDrag(dropAction);
-                acceptedDrag = true;
             }
-            return acceptedDrag;
         }
 
         private boolean dropComponent(Transferable transferable) throws IOException, UnsupportedFlavorException {

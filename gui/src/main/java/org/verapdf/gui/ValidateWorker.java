@@ -114,7 +114,7 @@ class ValidateWorker extends SwingWorker<ResultModel, Integer> {
                     : ProcessorFactory.fromValues(validatorConfig, featuresConfig,
                     this.configManager.getPluginsCollectionConfig(), this.configManager.getFixerConfig(), tasks,
                     this.customProfile, veraAppConfig.getFixesFolder());
-            try (BatchProcessor processor = ProcessorFactory.fileBatchProcessor(resultConfig);) {
+            try (BatchProcessor processor = ProcessorFactory.fileBatchProcessor(resultConfig)) {
                 VeraAppConfig applicationConfig = this.configManager.getApplicationConfig();
                 this.batchSummary = processor.process(this.pdfs,
                         ProcessorFactory.getHandler(FormatOption.MRR, applicationConfig.isVerbose(), mrrReport,
@@ -213,7 +213,7 @@ class ValidateWorker extends SwingWorker<ResultModel, Integer> {
         }
 
         @Override
-        public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+        public void startElement(String uri, String localName, String qName, Attributes attributes) {
             if ((qName.equals("policyReport") && (Integer.parseInt(attributes.getValue("failedChecks")) > 0))) {
                 this.policyNonCompliantJobCount++;
             }
