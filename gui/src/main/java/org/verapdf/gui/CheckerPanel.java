@@ -216,7 +216,7 @@ class CheckerPanel extends JPanel {
         this.add(this.chosenPDF);
 
         // DropTarget feature associated with JTextField chosenPDF
-        PanelDropTarget targetPdf = new PanelDropTarget(this.chosenPDF, "PDF");
+        PanelDropTarget targetPdf = new PanelDropTarget(this.chosenPDF, GUIConstants.PDF);
 
         JButton choosePDF = new JButton(GUIConstants.CHOOSE_PDF_BUTTON_TEXT);
         setGridBagConstraintsParameters(gbc, GUIConstants.CHOOSE_PDF_BUTTON_CONSTRAINT_GRID_X,
@@ -510,7 +510,7 @@ class CheckerPanel extends JPanel {
                 CheckerPanel.this.chosenPolicy.setEnabled(enablePolicy);
                 choosePolicy.setEnabled(enablePolicy);
                 if (enablePolicy) {
-                    PanelDropTarget targetPolicy = new PanelDropTarget(CheckerPanel.this.chosenPolicy, "Policy");
+                    PanelDropTarget targetPolicy = new PanelDropTarget(CheckerPanel.this.chosenPolicy, GUIConstants.SCH);
                 }
                 CheckerPanel.this.execute.setEnabled(isExecute());
             }
@@ -946,16 +946,18 @@ class CheckerPanel extends JPanel {
             Object dataObject = transferable.getTransferData(targetFlavor);
             List<File> selectedFiles = (List<File>) dataObject;
 
-            if (fileType.equals("PDF")) {
+            if (fileType.equals(GUIConstants.PDF)) {
                 pdfsToProcess = ApplicationUtils.filterPdfFiles(selectedFiles, true);
-                if(pdfsToProcess.size() > 0) {
+                if (pdfsToProcess.size() > 0) {
                     chosenPDF.setText(getSelectedPathsMessage(selectedFiles));
                     execute.setEnabled(isExecute());
                     return true;
-                } else{
+                } else {
                     return false;
                 }
-            } else if (fileType.equals("Policy") && selectedFiles.size() == 1 && isPolicyFile(selectedFiles.get(0))) {
+            } else if (fileType.equals(GUIConstants.SCH)
+                    && selectedFiles.size() == 1
+                    && isPolicyFile(selectedFiles.get(0))) {
                 setPolicyFile(selectedFiles.get(0));
                 return true;
             } else {
